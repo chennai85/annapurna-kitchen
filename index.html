@@ -122,29 +122,9 @@
   .stock-edit-header .close-btn { background: none; border: none; font-size: 20px; color: var(--grey); cursor: pointer; padding: 4px 8px; }
   .stock-edit-row { display: flex; gap: 10px; align-items: flex-end; }
   .stock-edit-current { font-size: 12px; color: var(--grey); margin-bottom: 8px; }
-  /* Setup overlay */
-  .setup-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 300; display: flex; align-items: center; justify-content: center; }
-  .setup-card { background: white; border-radius: 16px; padding: 32px 24px; max-width: 340px; width: 90%; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
-  .setup-card h2 { margin-bottom: 8px; }
-  .setup-card p { color: var(--grey); font-size: 14px; margin-bottom: 20px; }
-  .setup-card input { width: 100%; padding: 14px; border: 2px solid #E0E0E0; border-radius: var(--radius); font-size: 16px; text-align: center; margin-bottom: 16px; }
-  .setup-card input:focus { outline: none; border-color: var(--blue); }
-  .setup-card .error { color: var(--red); font-size: 13px; margin-bottom: 12px; display: none; }
 </style>
 </head>
 <body>
-
-<!-- ══════ SETUP: API URL (shown once) ══════ -->
-<div id="setup-overlay" class="setup-overlay" style="display:none">
-  <div class="setup-card">
-    <h2>🙏 Setup</h2>
-    <p>Paste the Apps Script Web App URL to connect to your spreadsheet.</p>
-    <input type="text" id="setup-url" placeholder="https://script.google.com/macros/s/.../exec" />
-    <div class="error" id="setup-error">Please enter a valid Apps Script URL</div>
-    <button class="btn btn-primary" onclick="saveApiUrl()">Connect</button>
-    <p style="margin-top:16px; font-size:12px; color:var(--grey);">You'll only need to do this once.</p>
-  </div>
-</div>
 
 <div class="top-bar">
   <h1>🙏 Annapurna <span>Kitchen</span></h1>
@@ -285,22 +265,7 @@
 // ══════════════════════════════════════════════════════════════
 // CONFIG — Apps Script deployment URL stored in localStorage
 // ══════════════════════════════════════════════════════════════
-var API_URL = '';
-
-function getApiUrl() {
-  return localStorage.getItem('annapurna_api_url') || '';
-}
-function saveApiUrl() {
-  var url = document.getElementById('setup-url').value.trim();
-  if (!url || !url.startsWith('https://script.google.com/')) {
-    document.getElementById('setup-error').style.display = 'block';
-    return;
-  }
-  localStorage.setItem('annapurna_api_url', url);
-  API_URL = url;
-  document.getElementById('setup-overlay').style.display = 'none';
-  init();
-}
+var API_URL = 'https://script.google.com/macros/s/AKfycbyudO3YnYld3nCQVhQUJlah-Uzn_V1Ni74ACXtlA-T1QxTHGTguM4u9WdYYcif7JdMUZw/exec';
 
 // ══════════════════════════════════════════════════════════════
 // API HELPER — replaces google.script.run with fetch()
@@ -373,12 +338,7 @@ function init() {
 }
 
 window.onload = function() {
-  API_URL = getApiUrl();
-  if (!API_URL) {
-    document.getElementById('setup-overlay').style.display = 'flex';
-  } else {
-    init();
-  }
+  init();
 
   document.getElementById('cnt-search').addEventListener('input', onCntSearch);
   document.getElementById('cnt-search').addEventListener('focus', onCntSearch);
