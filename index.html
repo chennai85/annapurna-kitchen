@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Annapurna Kitchen</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🙏</text></svg>">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #2C3E50; --green: #27AE60; --red: #E74C3C;
+    --purple: #8E44AD; --blue: #3498DB; --grey: #7F8C8D;
+    --light-grey: #F7F9FC; --yellow: #FFFDE7; --orange: #E67E22;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08); --radius: 12px;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--light-grey); color: #333; min-height: 100vh; padding-bottom: 80px; }
+  .top-bar { background: var(--navy); color: white; padding: 16px 20px 12px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+  .top-bar h1 { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+  .top-bar h1 span { opacity: 0.6; font-weight: 400; }
+  .tab-bar { display: flex; gap: 6px; }
+  .tab-btn { flex: 1; padding: 9px 8px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.7); }
+  .tab-btn.active { background: white; color: var(--navy); }
+  .page { display: none; padding: 16px; }
+  .page.active { display: block; }
+  .home-card { background: white; border-radius: var(--radius); padding: 24px; margin-bottom: 16px; box-shadow: var(--shadow); cursor: pointer; transition: transform 0.15s; border-left: 4px solid transparent; }
+  .home-card:active { transform: scale(0.98); }
+  .home-card.inventory { border-left-color: var(--green); }
+  .home-card.cooking { border-left-color: var(--purple); }
+  .home-card.stock { border-left-color: var(--orange); }
+  .home-card h2 { font-size: 18px; margin-bottom: 6px; }
+  .home-card p { color: var(--grey); font-size: 14px; line-height: 1.4; }
+  .home-card .emoji { font-size: 28px; margin-bottom: 8px; }
+  .search-box { position: relative; margin-bottom: 16px; }
+  .search-input { width: 100%; padding: 14px 16px 14px 44px; border: 2px solid #E0E0E0; border-radius: var(--radius); font-size: 16px; background: white; -webkit-appearance: none; }
+  .search-input:focus { outline: none; border-color: var(--blue); }
+  .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--grey); pointer-events: none; }
+  .search-clear { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: #E0E0E0; border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 14px; cursor: pointer; display: none; align-items: center; justify-content: center; color: #666; }
+  .search-clear.visible { display: flex; }
+  .suggestions { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #E0E0E0; border-radius: 0 0 var(--radius) var(--radius); max-height: 300px; overflow-y: auto; z-index: 50; box-shadow: 0 4px 16px rgba(0,0,0,0.12); display: none; }
+  .suggestions.open { display: block; }
+  .suggestion-item { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #F0F0F0; display: flex; justify-content: space-between; align-items: center; }
+  .suggestion-item:active { background: #F0F8FF; }
+  .suggestion-item .item-name { font-weight: 500; font-size: 15px; }
+  .suggestion-item .item-name mark { background: #FFF3CD; border-radius: 2px; padding: 0 2px; }
+  .suggestion-item .item-meta { color: var(--grey); font-size: 12px; text-align: right; }
+  .suggestion-item .item-meta .unit { font-weight: 600; color: #555; }
+  .suggestion-item .item-meta .cat { display: block; font-size: 11px; }
+  .suggestion-item.counted { background: #F0FFF0; }
+  .suggestion-item.counted .item-name::after { content: ' ✓'; color: var(--green); font-size: 12px; }
+  .suggestion-group { padding: 6px 16px; background: #F8F9FA; font-size: 11px; font-weight: 700; color: var(--grey); text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; }
+  .input-card { background: white; border-radius: var(--radius); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow); }
+  .input-card h3 { font-size: 16px; margin-bottom: 4px; }
+  .input-card .item-detail { color: var(--grey); font-size: 13px; margin-bottom: 16px; }
+  .form-row { display: flex; gap: 12px; margin-bottom: 12px; }
+  .form-group { flex: 1; }
+  .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--grey); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-group input, .form-group select { width: 100%; padding: 12px; border: 2px solid #E0E0E0; border-radius: 8px; font-size: 16px; -webkit-appearance: none; }
+  .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--blue); }
+  .form-group input[type="number"] { font-size: 20px; font-weight: 700; text-align: center; background: var(--yellow); }
+  .form-group input.readonly-unit { background: #F0F0F0; color: var(--grey); text-align: center; font-weight: 600; }
+  .btn { width: 100%; padding: 14px; border: none; border-radius: var(--radius); font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--green); color: white; }
+  .btn-purple { background: var(--purple); color: white; }
+  .btn-blue { background: var(--blue); color: white; }
+  .btn-red { background: var(--red); color: white; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .session-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .session-header h3 { font-size: 15px; color: var(--navy); }
+  .session-count { background: var(--navy); color: white; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+  .session-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: white; border-radius: 8px; margin-bottom: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .session-item .name { font-weight: 500; font-size: 14px; }
+  .session-item .qty-badge { background: var(--green); color: white; padding: 3px 10px; border-radius: 12px; font-size: 13px; font-weight: 600; }
+  .session-item .qty-badge.purple { background: var(--purple); }
+  .chip-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 12px; -webkit-overflow-scrolling: touch; }
+  .chip-bar::-webkit-scrollbar { display: none; }
+  .chip { padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer; border: 1.5px solid #E0E0E0; background: white; color: #555; transition: all 0.15s; }
+  .chip.active { background: var(--navy); color: white; border-color: var(--navy); }
+  .info-banner { background: #EBF5FB; border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; font-size: 13px; color: #2471A3; line-height: 1.5; }
+  .info-banner strong { color: #1A5276; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: #333; color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; z-index: 999; transition: transform 0.3s ease; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { background: var(--green); }
+  .toast.error { background: var(--red); }
+  .dish-tag { display: inline-block; background: #F4ECF7; color: var(--purple); padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-right: 4px; }
+  .spinner { display: inline-block; width: 30px; height: 30px; border: 3px solid #E0E0E0; border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .new-item-toggle { text-align: center; padding: 12px; margin-top: 8px; }
+  .new-item-toggle a { color: var(--red); font-size: 14px; font-weight: 600; text-decoration: none; cursor: pointer; }
+  .new-item-form { display: none; }
+  .new-item-form.open { display: block; }
+  .meta-bar { background: white; padding: 12px 16px; border-radius: var(--radius); margin-bottom: 16px; box-shadow: var(--shadow); display: flex; gap: 12px; align-items: center; }
+  .meta-bar input, .meta-bar select { flex: 1; padding: 8px 12px; border: 1.5px solid #E0E0E0; border-radius: 8px; font-size: 14px; }
+  .meta-bar input:focus { outline: none; border-color: var(--blue); }
+  .meta-bar label { font-size: 12px; font-weight: 600; color: var(--grey); white-space: nowrap; }
+  /* Stock */
+  .stock-summary { display: flex; gap: 10px; margin-bottom: 16px; }
+  .stock-stat { flex: 1; background: white; border-radius: var(--radius); padding: 14px 12px; text-align: center; box-shadow: var(--shadow); }
+  .stock-stat .num { font-size: 26px; font-weight: 800; color: var(--navy); }
+  .stock-stat .label { font-size: 11px; color: var(--grey); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .stock-stat.low .num { color: var(--red); }
+  .stock-synced { text-align: center; font-size: 12px; color: var(--grey); margin-bottom: 16px; font-style: italic; }
+  .stock-category-header { font-size: 13px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 0 6px; border-bottom: 2px solid var(--navy); margin-top: 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .stock-cat-count { font-size: 11px; font-weight: 600; color: white; background: var(--navy); padding: 2px 8px; border-radius: 10px; }
+  .stock-row { display: flex; align-items: center; padding: 10px 12px; background: white; border-radius: 8px; margin-bottom: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); cursor: pointer; transition: background 0.15s; }
+  .stock-row:active { background: #F0F8FF; }
+  .stock-row.low { background: #FFF5F5; border-left: 3px solid var(--red); }
+  .stock-row .stock-name { flex: 1; font-weight: 500; font-size: 14px; }
+  .stock-row .stock-qty { font-size: 16px; font-weight: 700; color: var(--navy); min-width: 50px; text-align: right; }
+  .stock-row.low .stock-qty { color: var(--red); }
+  .stock-row .stock-unit { font-size: 12px; color: var(--grey); width: 60px; margin-left: 4px; }
+  .stock-row .stock-par { font-size: 11px; color: var(--grey); margin-left: 8px; white-space: nowrap; }
+  .stock-row.low .stock-par { color: var(--red); font-weight: 600; }
+  .stock-empty { text-align: center; padding: 40px 20px; color: var(--grey); }
+  .stock-empty .emoji { font-size: 40px; margin-bottom: 12px; }
+  .refresh-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: white; border: 1.5px solid #E0E0E0; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--navy); cursor: pointer; }
+  .refresh-btn:active { transform: scale(0.97); background: #F0F0F0; }
+  .stock-edit-card { background: white; border-radius: var(--radius); padding: 16px; margin-bottom: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); border: 2px solid var(--blue); animation: slideDown 0.15s ease; }
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+  .stock-edit-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .stock-edit-header h4 { font-size: 15px; color: var(--navy); }
+  .stock-edit-header .close-btn { background: none; border: none; font-size: 20px; color: var(--grey); cursor: pointer; padding: 4px 8px; }
+  .stock-edit-row { display: flex; gap: 10px; align-items: flex-end; }
+  .stock-edit-current { font-size: 12px; color: var(--grey); margin-bottom: 8px; }
+  /* Setup overlay */
+  .setup-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 300; display: flex; align-items: center; justify-content: center; }
+  .setup-card { background: white; border-radius: 16px; padding: 32px 24px; max-width: 340px; width: 90%; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+  .setup-card h2 { margin-bottom: 8px; }
+  .setup-card p { color: var(--grey); font-size: 14px; margin-bottom: 20px; }
+  .setup-card input { width: 100%; padding: 14px; border: 2px solid #E0E0E0; border-radius: var(--radius); font-size: 16px; text-align: center; margin-bottom: 16px; }
+  .setup-card input:focus { outline: none; border-color: var(--blue); }
+  .setup-card .error { color: var(--red); font-size: 13px; margin-bottom: 12px; display: none; }
+</style>
+</head>
+<body>
+
+<!-- ══════ SETUP: API URL (shown once) ══════ -->
+<div id="setup-overlay" class="setup-overlay" style="display:none">
+  <div class="setup-card">
+    <h2>🙏 Setup</h2>
+    <p>Paste the Apps Script Web App URL to connect to your spreadsheet.</p>
+    <input type="text" id="setup-url" placeholder="https://script.google.com/macros/s/.../exec" />
+    <div class="error" id="setup-error">Please enter a valid Apps Script URL</div>
+    <button class="btn btn-primary" onclick="saveApiUrl()">Connect</button>
+    <p style="margin-top:16px; font-size:12px; color:var(--grey);">You'll only need to do this once.</p>
+  </div>
+</div>
+
+<div class="top-bar">
+  <h1>🙏 Annapurna <span>Kitchen</span></h1>
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showPage('home')">Home</button>
+    <button class="tab-btn" onclick="showPage('count')">📋 Count</button>
+    <button class="tab-btn" onclick="showPage('cook')">🍳 Cook</button>
+    <button class="tab-btn" onclick="showPage('stock')">📦 Stock</button>
+  </div>
+</div>
+
+<!-- HOME -->
+<div id="page-home" class="page active">
+  <div style="padding-top:8px"></div>
+  <div class="home-card inventory" onclick="showPage('count')"><div class="emoji">📋</div><h2>Inventory Count</h2><p>Count items in the kitchen. Search by name, enter quantity.</p></div>
+  <div class="home-card cooking" onclick="showPage('cook')"><div class="emoji">🍳</div><h2>Cooking Needs</h2><p>List ingredients needed for upcoming dishes.</p></div>
+  <div class="home-card stock" onclick="showPage('stock')"><div class="emoji">📦</div><h2>Current Stock</h2><p>See what's in stock. Tap any item to update the count.</p></div>
+  <div class="info-banner"><strong>How it works:</strong> Everything you enter here updates the Annapurna Inventory sheet directly.</div>
+</div>
+
+<!-- COUNT -->
+<div id="page-count" class="page">
+  <div class="meta-bar"><label>Your Name</label><input type="text" id="cnt-name" placeholder="e.g. Ravi K" /></div>
+  <div class="chip-bar" id="cnt-chips"></div>
+  <div class="search-box">
+    <span class="search-icon">🔍</span>
+    <input type="text" class="search-input" id="cnt-search" placeholder="Type item name... e.g. pot, cil, dal" autocomplete="off" />
+    <button class="search-clear" id="cnt-clear" onclick="clearCntSearch()">✕</button>
+    <div class="suggestions" id="cnt-suggestions"></div>
+  </div>
+  <div id="cnt-form" class="input-card" style="display:none">
+    <h3 id="cnt-form-name"></h3>
+    <div class="item-detail" id="cnt-form-detail"></div>
+    <div class="form-row">
+      <div class="form-group" style="flex:1"><label>Quantity</label><input type="number" id="cnt-qty" placeholder="0" min="0" step="any" inputmode="decimal" /></div>
+      <div class="form-group" style="flex:0.6"><label>Unit</label><input type="text" id="cnt-unit" readonly class="readonly-unit" /></div>
+    </div>
+    <button class="btn btn-primary" onclick="saveCntItem()">✓ Save Count</button>
+  </div>
+  <div class="new-item-toggle"><a onclick="toggleNewCntItem()">+ Found an item not on the list?</a></div>
+  <div id="cnt-new-form" class="new-item-form input-card">
+    <h3 style="color:var(--red); margin-bottom:12px">New Item Found</h3>
+    <div class="form-group" style="margin-bottom:12px"><label>Item Name</label><input type="text" id="cnt-new-name" placeholder="e.g. Rava (Sooji)" /></div>
+    <div class="form-row">
+      <div class="form-group"><label>Unit (guess)</label><input type="text" id="cnt-new-unit" placeholder="lbs, packs..." /></div>
+      <div class="form-group"><label>Quantity</label><input type="number" id="cnt-new-qty" placeholder="0" min="0" inputmode="decimal" /></div>
+    </div>
+    <div class="form-group" style="margin-bottom:16px"><label>Where did you find it?</label><input type="text" id="cnt-new-notes" placeholder="Near the rice shelf, back of fridge..." /></div>
+    <button class="btn btn-red" onclick="saveNewCntItem()">+ Add New Item</button>
+  </div>
+  <div id="cnt-session" style="margin-top:20px; display:none">
+    <div class="session-header"><h3>Counted This Session</h3><span class="session-count" id="cnt-session-count">0</span></div>
+    <div id="cnt-session-list"></div>
+  </div>
+</div>
+
+<!-- COOK -->
+<div id="page-cook" class="page">
+  <div class="meta-bar">
+    <label>Cook</label><input type="text" id="cook-name" placeholder="Your name" />
+    <label>Day</label>
+    <select id="cook-day"><option value="">Pick</option><option>Friday</option><option>Saturday</option><option>Sunday</option></select>
+  </div>
+  <div class="input-card">
+    <div class="form-group" style="margin-bottom:12px"><label>Dish Name</label><input type="text" id="cook-dish" placeholder="e.g. Poori Masala, Dal Fry" /></div>
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" class="search-input" id="cook-search" placeholder="Search ingredient..." autocomplete="off" />
+      <button class="search-clear" id="cook-clear" onclick="clearCookSearch()">✕</button>
+      <div class="suggestions" id="cook-suggestions"></div>
+    </div>
+    <div id="cook-ingredient-form" style="display:none">
+      <div style="font-weight:600; font-size:15px; margin-bottom:12px; color:var(--purple)" id="cook-selected-name"></div>
+      <div class="form-row">
+        <div class="form-group" style="flex:1"><label>Quantity</label><input type="number" id="cook-qty" placeholder="0" min="0" step="any" inputmode="decimal" /></div>
+        <div class="form-group" style="flex:0.6"><label>Unit</label><input type="text" id="cook-unit" readonly class="readonly-unit" /></div>
+      </div>
+      <button class="btn btn-purple" onclick="saveCookingItem()" style="margin-top:8px">+ Add Ingredient</button>
+    </div>
+  </div>
+  <div class="new-item-toggle"><a onclick="toggleNewCookItem()">+ Ingredient not in the list?</a></div>
+  <div id="cook-new-form" class="new-item-form input-card">
+    <h3 style="color:var(--red); margin-bottom:12px">New Ingredient</h3>
+    <div class="form-group" style="margin-bottom:12px"><label>Ingredient Name</label><input type="text" id="cook-new-name" placeholder="e.g. Corn Flour" /></div>
+    <div class="form-row">
+      <div class="form-group"><label>Unit</label><input type="text" id="cook-new-unit" placeholder="lbs, packs..." /></div>
+      <div class="form-group"><label>Quantity</label><input type="number" id="cook-new-qty" placeholder="0" min="0" inputmode="decimal" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Store</label>
+        <select id="cook-new-store" style="padding:12px; border:2px solid #E0E0E0; border-radius:8px; font-size:16px;">
+          <option value="">Pick store</option><option>Costco</option><option>RD</option><option>Lotte</option><option>Patel</option>
+        </select>
+      </div>
+      <div class="form-group"><label>For Dish</label><input type="text" id="cook-new-dish" placeholder="e.g. Poori Masala" /></div>
+    </div>
+    <button class="btn btn-red" onclick="saveNewCookItem()" style="margin-top:4px">+ Add New Ingredient</button>
+  </div>
+  <div id="cook-session" style="margin-top:20px; display:none">
+    <div class="session-header"><h3>Added This Session</h3><span class="session-count" id="cook-session-count" style="background:var(--purple)">0</span></div>
+    <div id="cook-session-list"></div>
+  </div>
+</div>
+
+<!-- STOCK -->
+<div id="page-stock" class="page">
+  <div id="stock-loading" style="text-align:center; padding:40px; color:var(--grey)"><div class="spinner"></div><p style="margin-top:12px">Loading inventory...</p></div>
+  <div id="stock-content" style="display:none">
+    <div class="stock-summary">
+      <div class="stock-stat"><div class="num" id="stock-total-count">0</div><div class="label">Items in Stock</div></div>
+      <div class="stock-stat"><div class="num" id="stock-cat-count">0</div><div class="label">Categories</div></div>
+      <div class="stock-stat low"><div class="num" id="stock-low-count">0</div><div class="label">Low Stock</div></div>
+    </div>
+    <div class="stock-synced" id="stock-synced"></div>
+    <div class="info-banner" style="margin-bottom:12px; padding:10px 14px;"><strong>Tap any item</strong> to update its count.</div>
+    <div style="display:flex; gap:10px; margin-bottom:12px; align-items:center;">
+      <div class="search-box" style="flex:1; margin-bottom:0">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" id="stock-search" placeholder="Search items..." autocomplete="off" style="padding:12px 16px 12px 44px; font-size:15px;" />
+        <button class="search-clear" id="stock-clear" onclick="clearStockSearch()">✕</button>
+      </div>
+      <button class="refresh-btn" onclick="loadStockView()">🔄</button>
+    </div>
+    <div class="chip-bar" id="stock-chips"></div>
+    <div id="stock-edit" style="display:none"></div>
+    <div id="stock-list"></div>
+  </div>
+  <div id="stock-empty" class="stock-empty" style="display:none"><div class="emoji">📭</div><p>No items in stock yet.</p><p style="font-size:13px; margin-top:8px">Run an inventory count first.</p></div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="loading" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.9); z-index: 200; display:none; align-items:center; justify-content:center; flex-direction:column;">
+  <div class="spinner"></div><p style="margin-top:12px; color:var(--grey)" id="loading-text">Loading items...</p>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// CONFIG — Apps Script deployment URL stored in localStorage
+// ══════════════════════════════════════════════════════════════
+var API_URL = '';
+
+function getApiUrl() {
+  return localStorage.getItem('annapurna_api_url') || '';
+}
+function saveApiUrl() {
+  var url = document.getElementById('setup-url').value.trim();
+  if (!url || !url.startsWith('https://script.google.com/')) {
+    document.getElementById('setup-error').style.display = 'block';
+    return;
+  }
+  localStorage.setItem('annapurna_api_url', url);
+  API_URL = url;
+  document.getElementById('setup-overlay').style.display = 'none';
+  init();
+}
+
+// ══════════════════════════════════════════════════════════════
+// API HELPER — replaces google.script.run with fetch()
+// Apps Script doPost requires redirect-follow via no-cors POST,
+// but the standard pattern is POST → redirect → JSON.
+// We use the doGet?action= approach for reads (simpler CORS)
+// and POST for writes.
+// ══════════════════════════════════════════════════════════════
+function apiCall(action, params) {
+  params = params || {};
+  params.action = action;
+
+  // All calls go through POST to handle CORS via Apps Script redirect
+  return fetch(API_URL, {
+    method: 'POST',
+    redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(params)
+  })
+  .then(function(resp) { return resp.json(); })
+  .catch(function(err) {
+    // If POST fails (CORS), try GET as fallback
+    var qs = Object.keys(params).map(function(k) {
+      return encodeURIComponent(k) + '=' + encodeURIComponent(
+        typeof params[k] === 'object' ? JSON.stringify(params[k]) : params[k]
+      );
+    }).join('&');
+    return fetch(API_URL + '?' + qs, { redirect: 'follow' })
+      .then(function(resp) { return resp.json(); });
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════
+var masterItems = [];
+var inventoryCounts = {};
+var stockData = { items: [], lastSynced: '' };
+var cntSession = [];
+var cookSession = [];
+var selectedCntItem = null;
+var selectedCookItem = null;
+var activeCategory = 'All';
+var stockCategory = 'All';
+var editingStockItem = null;
+var catOrder = ['Produce','Dairy','Grains & Rice','Grains & Bread','Lentils & Beans','Spices & Oils','Snacks & Misc','Supplies'];
+
+function getUserName() {
+  return (document.getElementById('cnt-name').value || document.getElementById('cook-name').value || localStorage.getItem('annapurna_name') || '').trim();
+}
+function saveUserName(name) { if (name) localStorage.setItem('annapurna_name', name); }
+
+// ═══ INIT ═══
+function init() {
+  showLoading('Loading inventory items...');
+  apiCall('getMasterItems').then(function(items) {
+    masterItems = items || [];
+    buildCntChips();
+    return apiCall('getInventoryCounts');
+  }).then(function(counts) {
+    inventoryCounts = counts || {};
+    hideLoading();
+    var saved = localStorage.getItem('annapurna_name') || '';
+    document.getElementById('cnt-name').value = saved;
+    document.getElementById('cook-name').value = saved;
+  }).catch(function(err) {
+    hideLoading();
+    showToast('Failed to load: ' + (err.message || err), 'error');
+  });
+}
+
+window.onload = function() {
+  API_URL = getApiUrl();
+  if (!API_URL) {
+    document.getElementById('setup-overlay').style.display = 'flex';
+  } else {
+    init();
+  }
+
+  document.getElementById('cnt-search').addEventListener('input', onCntSearch);
+  document.getElementById('cnt-search').addEventListener('focus', onCntSearch);
+  document.getElementById('cook-search').addEventListener('input', onCookSearch);
+  document.getElementById('cook-search').addEventListener('focus', onCookSearch);
+  document.getElementById('stock-search').addEventListener('input', renderStockList);
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.search-box')) {
+      document.getElementById('cnt-suggestions').classList.remove('open');
+      document.getElementById('cook-suggestions').classList.remove('open');
+    }
+  });
+};
+
+// ═══ NAV ═══
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  var tabs = document.querySelectorAll('.tab-btn');
+  if (page==='home') tabs[0].classList.add('active');
+  if (page==='count') tabs[1].classList.add('active');
+  if (page==='cook') tabs[2].classList.add('active');
+  if (page==='stock') { tabs[3].classList.add('active'); loadStockView(); }
+}
+
+// ═══ HELPERS ═══
+function highlightMatch(t,q) { if(!q)return t; var i=t.toLowerCase().indexOf(q.toLowerCase()); if(i===-1)return t; return t.substring(0,i)+'<mark>'+t.substring(i,i+q.length)+'</mark>'+t.substring(i+q.length); }
+function escapeHtml(s) { return s.replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+function showToast(m,t) { var e=document.getElementById('toast'); e.textContent=m; e.className='toast '+(t||'')+' show'; setTimeout(function(){e.classList.remove('show')},2500); }
+function showLoading(t) { document.getElementById('loading-text').textContent=t||'Loading...'; document.getElementById('loading').style.display='flex'; }
+function hideLoading() { document.getElementById('loading').style.display='none'; }
+function groupByCategory(items) { var g={}; items.forEach(function(i){ var c=i.category||'Other'; if(!g[c])g[c]=[]; g[c].push(i); }); return g; }
+
+// ═══ COUNT TAB ═══
+function buildCntChips() {
+  var cats = ['All'];
+  masterItems.forEach(function(i) { if (i.category && cats.indexOf(i.category)===-1) cats.push(i.category); });
+  document.getElementById('cnt-chips').innerHTML = cats.map(function(c) {
+    return '<div class="chip'+(c===activeCategory?' active':'')+'" onclick="activeCategory=\''+c+'\';buildCntChips();onCntSearch();">'+c+'</div>';
+  }).join('');
+}
+function onCntSearch() {
+  var q = document.getElementById('cnt-search').value.trim().toLowerCase();
+  document.getElementById('cnt-clear').classList.toggle('visible', q.length>0);
+  if (q.length<1 && activeCategory==='All') { document.getElementById('cnt-suggestions').classList.remove('open'); return; }
+  var filtered = masterItems.filter(function(i) { return (!q||i.name.toLowerCase().indexOf(q)!==-1)&&(activeCategory==='All'||i.category===activeCategory); });
+  var groups = groupByCategory(filtered);
+  var html='', total=0;
+  catOrder.forEach(function(cat) {
+    if(!groups[cat]) return;
+    html += '<div class="suggestion-group">'+cat+'</div>';
+    groups[cat].forEach(function(item) {
+      var ic = inventoryCounts[item.name];
+      var cls = (ic && ic.qty > 0) ? 'suggestion-item counted' : 'suggestion-item';
+      var dn = q ? highlightMatch(item.name, q) : item.name;
+      var cl = (ic && ic.qty > 0) ? ' ('+ic.qty+')' : '';
+      html += '<div class="'+cls+'" onclick="selectCntItem(\''+escapeHtml(item.name)+'\')">';
+      html += '<span class="item-name">'+dn+cl+'</span>';
+      html += '<span class="item-meta"><span class="unit">'+item.unit+'</span><span class="cat">'+item.store+'</span></span></div>';
+      total++;
+    });
+  });
+  if(!total) html='<div style="padding:16px;text-align:center;color:var(--grey)">No items found. Try adding as a new item below.</div>';
+  document.getElementById('cnt-suggestions').innerHTML = html;
+  document.getElementById('cnt-suggestions').classList.add('open');
+}
+function selectCntItem(name) {
+  var item = masterItems.find(function(i){return i.name===name});
+  if(!item) return;
+  selectedCntItem = item;
+  document.getElementById('cnt-suggestions').classList.remove('open');
+  document.getElementById('cnt-search').value = name;
+  document.getElementById('cnt-form').style.display = 'block';
+  document.getElementById('cnt-form-name').textContent = name;
+  document.getElementById('cnt-form-detail').textContent = item.category+' · '+item.store+(item.brand?' · '+item.brand:'');
+  document.getElementById('cnt-unit').value = item.unit;
+  var existing = inventoryCounts[item.name];
+  document.getElementById('cnt-qty').value = (existing && existing.qty > 0) ? existing.qty : '';
+  setTimeout(function(){document.getElementById('cnt-qty').focus()},100);
+}
+function clearCntSearch() {
+  document.getElementById('cnt-search').value='';
+  document.getElementById('cnt-clear').classList.remove('visible');
+  document.getElementById('cnt-suggestions').classList.remove('open');
+  document.getElementById('cnt-form').style.display='none';
+  selectedCntItem = null;
+}
+function saveCntItem() {
+  if(!selectedCntItem) return;
+  var qty = document.getElementById('cnt-qty').value;
+  if(qty===''||qty===null){showToast('Enter a quantity','error');return;}
+  var btn = document.querySelector('#cnt-form .btn-primary');
+  btn.disabled=true; btn.textContent='Saving...';
+  var name = getUserName(); saveUserName(name);
+
+  apiCall('saveItemCount', {
+    itemName: selectedCntItem.name,
+    qty: parseFloat(qty),
+    updatedBy: name || 'Web App'
+  }).then(function(r) {
+    btn.disabled=false; btn.textContent='✓ Save Count';
+    if(r.success) {
+      inventoryCounts[selectedCntItem.name] = {qty:parseFloat(qty)};
+      cntSession.unshift({name:selectedCntItem.name,qty:qty,unit:selectedCntItem.unit});
+      updateCntSession();
+      showToast('✓ '+selectedCntItem.name+': '+qty+' '+selectedCntItem.unit,'success');
+      document.getElementById('cnt-form').style.display='none';
+      document.getElementById('cnt-search').value='';
+      document.getElementById('cnt-clear').classList.remove('visible');
+      selectedCntItem=null;
+      setTimeout(function(){document.getElementById('cnt-search').focus()},200);
+    } else showToast('Error: '+r.error,'error');
+  }).catch(function(err) {
+    btn.disabled=false; btn.textContent='✓ Save Count';
+    showToast('Error: '+(err.message||err),'error');
+  });
+}
+function saveNewCntItem() {
+  var nm=document.getElementById('cnt-new-name').value.trim();
+  var un=document.getElementById('cnt-new-unit').value.trim();
+  var qt=document.getElementById('cnt-new-qty').value;
+  var nt=document.getElementById('cnt-new-notes').value.trim();
+  if(!nm){showToast('Enter item name','error');return;}
+  var btn=document.querySelector('#cnt-new-form .btn-red');
+  btn.disabled=true;btn.textContent='Saving...';
+  var name=getUserName();saveUserName(name);
+
+  apiCall('saveNewItem', {
+    itemName: nm, unit: un, qty: parseFloat(qt)||0, notes: nt, addedBy: name
+  }).then(function(r) {
+    btn.disabled=false;btn.textContent='+ Add New Item';
+    if(r.success) {
+      showToast('✓ New item: '+nm,'success');
+      cntSession.unshift({name:nm+' (NEW)',qty:qt||'?',unit:un});
+      updateCntSession();
+      document.getElementById('cnt-new-name').value='';
+      document.getElementById('cnt-new-unit').value='';
+      document.getElementById('cnt-new-qty').value='';
+      document.getElementById('cnt-new-notes').value='';
+      toggleNewCntItem();
+    } else showToast('Error: '+r.error,'error');
+  }).catch(function(e){btn.disabled=false;btn.textContent='+ Add New Item';showToast('Error: '+(e.message||e),'error');});
+}
+function updateCntSession() {
+  var c=document.getElementById('cnt-session');
+  document.getElementById('cnt-session-count').textContent=cntSession.length;
+  if(!cntSession.length){c.style.display='none';return;}
+  c.style.display='block';
+  document.getElementById('cnt-session-list').innerHTML=cntSession.map(function(i){
+    return '<div class="session-item"><span class="name">'+i.name+'</span><span class="qty-badge">'+i.qty+' '+i.unit+'</span></div>';
+  }).join('');
+}
+function toggleNewCntItem(){document.getElementById('cnt-new-form').classList.toggle('open');}
+
+// ═══ COOK TAB ═══
+function onCookSearch() {
+  var q=document.getElementById('cook-search').value.trim().toLowerCase();
+  document.getElementById('cook-clear').classList.toggle('visible',q.length>0);
+  if(q.length<1){document.getElementById('cook-suggestions').classList.remove('open');return;}
+  var filtered=masterItems.filter(function(i){return i.name.toLowerCase().indexOf(q)!==-1;});
+  var groups=groupByCategory(filtered);
+  var html='',total=0;
+  catOrder.forEach(function(cat){
+    if(!groups[cat])return;
+    html+='<div class="suggestion-group">'+cat+'</div>';
+    groups[cat].forEach(function(item){
+      html+='<div class="suggestion-item" onclick="selectCookItem(\''+escapeHtml(item.name)+'\')">';
+      html+='<span class="item-name">'+highlightMatch(item.name,q)+'</span>';
+      html+='<span class="item-meta"><span class="unit">'+item.unit+'</span></span></div>';
+      total++;
+    });
+  });
+  if(!total)html='<div style="padding:16px;text-align:center;color:var(--grey)">Not found. Add as new ingredient below.</div>';
+  document.getElementById('cook-suggestions').innerHTML=html;
+  document.getElementById('cook-suggestions').classList.add('open');
+}
+function selectCookItem(name) {
+  var item=masterItems.find(function(i){return i.name===name;});
+  if(!item)return;
+  selectedCookItem=item;
+  document.getElementById('cook-suggestions').classList.remove('open');
+  document.getElementById('cook-search').value=name;
+  document.getElementById('cook-ingredient-form').style.display='block';
+  document.getElementById('cook-selected-name').textContent=item.name+' ('+item.unit+')';
+  document.getElementById('cook-unit').value=item.unit;
+  document.getElementById('cook-qty').value='';
+  setTimeout(function(){document.getElementById('cook-qty').focus()},100);
+}
+function clearCookSearch() {
+  document.getElementById('cook-search').value='';
+  document.getElementById('cook-clear').classList.remove('visible');
+  document.getElementById('cook-suggestions').classList.remove('open');
+  document.getElementById('cook-ingredient-form').style.display='none';
+  selectedCookItem=null;
+}
+function saveCookingItem() {
+  if(!selectedCookItem)return;
+  var dish=document.getElementById('cook-dish').value.trim();
+  var qty=document.getElementById('cook-qty').value;
+  var unit=document.getElementById('cook-unit').value;
+  var cookName=document.getElementById('cook-name').value.trim();
+  var day=document.getElementById('cook-day').value;
+  if(!dish){showToast('Enter a dish name first','error');return;}
+  if(!qty){showToast('Enter quantity','error');return;}
+  var btn=document.querySelector('#cook-ingredient-form .btn-purple');
+  btn.disabled=true;btn.textContent='Saving...';
+  saveUserName(cookName);
+
+  apiCall('saveCookingNeed', {
+    dish: dish, ingredient: selectedCookItem.name,
+    qty: parseFloat(qty), unit: unit, cookSevak: cookName, day: day
+  }).then(function(r) {
+    btn.disabled=false;btn.textContent='+ Add Ingredient';
+    if(r.success) {
+      showToast('✓ '+selectedCookItem.name+' added for '+dish,'success');
+      cookSession.unshift({dish:dish,name:selectedCookItem.name,qty:qty,unit:unit});
+      updateCookSession();
+      document.getElementById('cook-search').value='';
+      document.getElementById('cook-clear').classList.remove('visible');
+      document.getElementById('cook-ingredient-form').style.display='none';
+      selectedCookItem=null;
+      setTimeout(function(){document.getElementById('cook-search').focus()},200);
+    } else showToast('Error: '+r.error,'error');
+  }).catch(function(e){btn.disabled=false;btn.textContent='+ Add Ingredient';showToast('Error: '+(e.message||e),'error');});
+}
+function saveNewCookItem() {
+  var nm=document.getElementById('cook-new-name').value.trim();
+  var un=document.getElementById('cook-new-unit').value.trim();
+  var qt=document.getElementById('cook-new-qty').value;
+  var st=document.getElementById('cook-new-store').value;
+  var ds=document.getElementById('cook-new-dish').value.trim()||document.getElementById('cook-dish').value.trim();
+  if(!nm){showToast('Enter ingredient name','error');return;}
+  var btn=document.querySelector('#cook-new-form .btn-red');
+  btn.disabled=true;btn.textContent='Saving...';
+  var name=getUserName();saveUserName(name);
+
+  apiCall('saveNewIngredient', {
+    ingredientName: nm, unit: un, qty: parseFloat(qt)||0,
+    store: st, forDish: ds, notes: '', addedBy: name
+  }).then(function(r) {
+    btn.disabled=false;btn.textContent='+ Add New Ingredient';
+    if(r.success) {
+      showToast('✓ New ingredient: '+nm,'success');
+      cookSession.unshift({dish:ds||'—',name:nm+' (NEW)',qty:qt||'?',unit:un});
+      updateCookSession();
+      document.getElementById('cook-new-name').value='';
+      document.getElementById('cook-new-unit').value='';
+      document.getElementById('cook-new-qty').value='';
+      document.getElementById('cook-new-store').value='';
+      document.getElementById('cook-new-dish').value='';
+      toggleNewCookItem();
+    } else showToast('Error: '+r.error,'error');
+  }).catch(function(e){btn.disabled=false;btn.textContent='+ Add New Ingredient';showToast('Error: '+(e.message||e),'error');});
+}
+function updateCookSession() {
+  var c=document.getElementById('cook-session');
+  document.getElementById('cook-session-count').textContent=cookSession.length;
+  if(!cookSession.length){c.style.display='none';return;}
+  c.style.display='block';
+  document.getElementById('cook-session-list').innerHTML=cookSession.map(function(i){
+    return '<div class="session-item"><span class="name"><span class="dish-tag">'+i.dish+'</span> '+i.name+'</span><span class="qty-badge purple">'+i.qty+' '+i.unit+'</span></div>';
+  }).join('');
+}
+function toggleNewCookItem(){document.getElementById('cook-new-form').classList.toggle('open');}
+
+// ═══ STOCK TAB ═══
+function loadStockView() {
+  document.getElementById('stock-loading').style.display='block';
+  document.getElementById('stock-content').style.display='none';
+  document.getElementById('stock-empty').style.display='none';
+
+  apiCall('getCurrentInventory').then(function(data) {
+    stockData=data||{items:[],lastSynced:''};
+    document.getElementById('stock-loading').style.display='none';
+    if(!stockData.items.length){document.getElementById('stock-empty').style.display='block';return;}
+    document.getElementById('stock-content').style.display='block';
+    var lowCount=stockData.items.filter(function(i){return i.low}).length;
+    var cats={};stockData.items.forEach(function(i){cats[i.category]=true});
+    document.getElementById('stock-total-count').textContent=stockData.items.length;
+    document.getElementById('stock-cat-count').textContent=Object.keys(cats).length;
+    document.getElementById('stock-low-count').textContent=lowCount;
+    document.getElementById('stock-synced').textContent=stockData.lastSynced?'Last synced: '+stockData.lastSynced:'';
+    buildStockChips();renderStockList();
+  }).catch(function(e){document.getElementById('stock-loading').style.display='none';showToast('Error: '+(e.message||e),'error');});
+}
+function buildStockChips() {
+  var cats=['All'];
+  catOrder.forEach(function(c){if(stockData.items.some(function(i){return i.category===c}))cats.push(c)});
+  var lowCount=stockData.items.filter(function(i){return i.low}).length;
+  var html='';
+  cats.forEach(function(c){html+='<div class="chip'+(c===stockCategory?' active':'')+'" onclick="stockCategory=\''+c+'\';buildStockChips();renderStockList();">'+c+'</div>'});
+  if(lowCount>0)html+='<div class="chip'+(stockCategory==='Low'?' active':'')+'" onclick="stockCategory=\'Low\';buildStockChips();renderStockList();" style="border-color:#E74C3C;color:#E74C3C">⚠️ Low ('+lowCount+')</div>';
+  document.getElementById('stock-chips').innerHTML=html;
+}
+function renderStockList() {
+  closeStockEdit();
+  var q=(document.getElementById('stock-search').value||'').trim().toLowerCase();
+  document.getElementById('stock-clear').classList.toggle('visible',q.length>0);
+  var filtered=stockData.items.filter(function(i){
+    var ms=!q||i.name.toLowerCase().indexOf(q)!==-1;
+    var mc=stockCategory==='All'||(stockCategory==='Low'?i.low:i.category===stockCategory);
+    return ms&&mc;
+  });
+  var groups={};
+  filtered.forEach(function(i){var c=i.category||'Other';if(!groups[c])groups[c]=[];groups[c].push(i)});
+  var html='';
+  if(!filtered.length){html='<div style="text-align:center;padding:30px;color:var(--grey)">No items match.</div>';}
+  else{
+    catOrder.forEach(function(cat){
+      if(!groups[cat])return;
+      html+='<div class="stock-category-header"><span>'+cat+'</span><span class="stock-cat-count">'+groups[cat].length+'</span></div>';
+      groups[cat].forEach(function(item){
+        var cls=item.low?'stock-row low':'stock-row';
+        var dn=q?highlightMatch(item.name,q):item.name;
+        html+='<div class="'+cls+'" onclick="openStockEdit(\''+escapeHtml(item.name)+'\')">';
+        html+='<span class="stock-name">'+dn+'</span>';
+        html+='<span class="stock-qty">'+item.stock+'</span>';
+        html+='<span class="stock-unit">'+item.unit+'</span>';
+        if(item.par!==null)html+='<span class="stock-par">par '+item.par+'</span>';
+        html+='</div>';
+      });
+    });
+  }
+  document.getElementById('stock-list').innerHTML=html;
+}
+function openStockEdit(itemName) {
+  var item=stockData.items.find(function(i){return i.name===itemName});
+  if(!item)return;
+  editingStockItem=item;
+  var parInfo=item.par!==null?' · par '+item.par:'';
+  var lowTag=item.low?' <span style="color:var(--red);font-weight:600;font-size:12px">⚠️ LOW</span>':'';
+  var c=document.getElementById('stock-edit');
+  c.innerHTML=
+    '<div class="stock-edit-card">'+
+    '<div class="stock-edit-header"><h4>'+item.name+lowTag+'</h4><button class="close-btn" onclick="closeStockEdit()">✕</button></div>'+
+    '<div class="stock-edit-current">'+item.category+' · '+item.store+parInfo+'</div>'+
+    '<div class="stock-edit-row">'+
+    '<div class="form-group" style="flex:0.4"><label>Current</label><div style="padding:12px;text-align:center;font-size:18px;font-weight:700;color:var(--grey);background:#F5F5F5;border-radius:8px;">'+item.stock+'</div></div>'+
+    '<div style="padding-bottom:8px;font-size:20px;color:var(--grey);">→</div>'+
+    '<div class="form-group" style="flex:0.4"><label>New Qty</label><input type="number" id="stock-edit-qty" value="'+item.stock+'" min="0" step="any" inputmode="decimal" /></div>'+
+    '<div class="form-group" style="flex:0.25"><label>Unit</label><div style="padding:12px;text-align:center;font-size:14px;color:var(--grey);background:#F5F5F5;border-radius:8px;">'+item.unit+'</div></div>'+
+    '</div>'+
+    '<div style="margin-top:12px"><button class="btn btn-blue" id="stock-edit-save" onclick="saveStockEdit()">✓ Update Count</button></div></div>';
+  c.style.display='block';
+  c.scrollIntoView({behavior:'smooth',block:'nearest'});
+  setTimeout(function(){var inp=document.getElementById('stock-edit-qty');if(inp){inp.focus();inp.select();}},200);
+}
+function closeStockEdit(){editingStockItem=null;var c=document.getElementById('stock-edit');c.style.display='none';c.innerHTML='';}
+function saveStockEdit() {
+  if(!editingStockItem)return;
+  var newQty=document.getElementById('stock-edit-qty').value;
+  if(newQty===''||newQty===null){showToast('Enter a quantity','error');return;}
+  newQty=parseFloat(newQty);
+  if(newQty===editingStockItem.stock){closeStockEdit();showToast('No change','');return;}
+  var btn=document.getElementById('stock-edit-save');
+  btn.disabled=true;btn.textContent='Saving...';
+  var name=getUserName()||'Web App';
+  var itemName=editingStockItem.name;
+
+  apiCall('saveItemCount', {
+    itemName: itemName, qty: newQty, updatedBy: name
+  }).then(function(r) {
+    btn.disabled=false;btn.textContent='✓ Update Count';
+    if(r.success) {
+      var item=stockData.items.find(function(i){return i.name===itemName});
+      if(item){item.stock=newQty;if(item.par!==null)item.low=newQty<item.par;}
+      closeStockEdit();
+      if(newQty<=0){stockData.items=stockData.items.filter(function(i){return i.name!==itemName});document.getElementById('stock-total-count').textContent=stockData.items.length;}
+      renderStockList();
+      document.getElementById('stock-low-count').textContent=stockData.items.filter(function(i){return i.low}).length;
+      buildStockChips();
+      showToast('✓ '+itemName+': '+r.oldQty+' → '+newQty,'success');
+    } else showToast('Error: '+r.error,'error');
+  }).catch(function(e){btn.disabled=false;btn.textContent='✓ Update Count';showToast('Error: '+(e.message||e),'error');});
+}
+function clearStockSearch(){document.getElementById('stock-search').value='';document.getElementById('stock-clear').classList.remove('visible');renderStockList();}
+</script>
+</body>
+</html>
